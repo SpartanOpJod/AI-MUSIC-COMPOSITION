@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fonts: Poppins / Inter used in index.html link */
+
+/* variables */
+:root {
+  --accent: #19e3a8;
+  --accent2: #3aa0ff;
+}
+
+/* glass card */
+.card-glass {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  backdrop-filter: blur(6px);
+}
+
+/* hero overlay */
+.hero-overlay {
+  background: linear-gradient(90deg, rgba(3,10,28,0.75), rgba(6,18,36,0.35));
+}
+
+/* float animation for anime images */
+@keyframes floaty {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+.floaty { animation: floaty 5s ease-in-out infinite; }
+
+/* subtle shadow */
+.soft-shadow { box-shadow: 0 8px 30px rgba(2,6,23,0.7); }
