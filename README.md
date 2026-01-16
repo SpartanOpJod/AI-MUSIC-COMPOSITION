@@ -244,3 +244,12 @@ Mobile app
 📜 History & Library (Frontend)
 
 🎹 Studio Mode with pro-level controls
+
+
+📬 Contact
+
+👤 Developed by: Aryan Srivastava 
+
+🔗 LinkedIn Profile:https://www.linkedin.com/in/aryan-srivastava-29a9a031a/
+
+🌐 GitHub: https://github.com/SpartanOpJod
