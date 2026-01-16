@@ -19,10 +19,12 @@ CORS(
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
 
-# --- Database setup with absolute paths ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MUSIC_DB_PATH = os.path.join(BASE_DIR, "music_history.db")
-USERS_DB_PATH = os.path.join(BASE_DIR, "users.db")
+DATA_DIR = "/data"
+os.makedirs(DATA_DIR, exist_ok=True)
+
+USERS_DB_PATH = os.path.join(DATA_DIR, "users.db")
+MUSIC_DB_PATH = os.path.join(DATA_DIR, "music_history.db")
+
 
 def init_music_db():
     """Initialize music history database"""
