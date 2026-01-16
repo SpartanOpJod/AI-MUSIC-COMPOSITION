@@ -1,4 +1,4 @@
-# studio_api.py
+code = '''# studio_api.py
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import random
@@ -379,4 +379,9 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
+'''
 
+with open("python-core/studio_api.py", "w") as f:
+    f.write(code)
+
+print("✅ studio_api.py has been fixed with proper indentation!")
