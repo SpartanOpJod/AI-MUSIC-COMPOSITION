@@ -30,32 +30,52 @@ def query_musicgen_colab(prompt: str, duration: int = 10, colab_url: str = None,
     
     raise Exception("Unexpected response format from Gradio/Colab: " + str(first))
 
-def generate_dummy_wav_bytes(prompt: str, duration: int = 10, sr: int = 32000):
+def generate_dummy_wav_bytes(prompt: str, duration: int = 10, sr: int = 32000, mood="calm", energy=5):
     import numpy as np, io, wave
+
+    mood_freq_map = {
+        "happy": 440,
+        "sad": 180,
+        "calm": 220,
+        "energetic": 660,
+        "mysterious": 260,
+        "romantic": 300
+    }
+
+    base_freq = mood_freq_map.get(mood, 220)
+    base_freq += (energy - 5) * 15
+
     t = np.linspace(0, duration, int(sr * duration), endpoint=False)
-    # Use timestamp + random for truly unique frequencies
-    freq = 220.0 + ((int(time.time() * 1000000) + random.randint(0, 10000)) % 200)
-    audio = 0.3 * np.sin(2 * np.pi * freq * t)
-    audio += 0.12 * np.sin(2 * np.pi * (freq*2) * t)
-    for i in range(0, len(t), int(sr * (60/120))):
-        hi = np.random.normal(0, 0.05, min(2000, len(t)-i))
-        audio[i:i+len(hi)] += hi
+
+    audio = 0.35 * np.sin(2 * np.pi * base_freq * t)
+
+    if energy > 6:
+        audio += 0.2 * np.sin(2 * np.pi * base_freq * 2 * t)
+    else:
+        audio += 0.1 * np.sin(2 * np.pi * base_freq * 0.5 * t)
+
     audio = audio / (np.max(np.abs(audio)) + 1e-9)
-    audio_int16 = (audio * 32767).astype('int16')
+    audio_int16 = (audio * 32767).astype("int16")
+
     buf = io.BytesIO()
-    with wave.open(buf, 'wb') as wf:
+    with wave.open(buf, "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
         wf.setframerate(sr)
         wf.writeframes(audio_int16.tobytes())
+
     return buf.getvalue()
 
-def query_musicgen(prompt: str, duration: int = 10, use_colab: bool = True, colab_url: str = None):
+
+def query_musicgen(prompt, duration=10, mood="calm", energy=5, use_colab=True, colab_url=None):
+
     if use_colab:
         try:
             return query_musicgen_colab(prompt, duration=duration, colab_url=colab_url)
         except Exception as e:
             print("Colab call failed — using dummy generator:", e)
-            return generate_dummy_wav_bytes(prompt, duration)
+            return generate_dummy_wav_bytes(prompt, duration, mood=mood, energy=energy)
+
     else:
-        return generate_dummy_wav_bytes(prompt, duration)
+        return generate_dummy_wav_bytes(prompt, duration, mood=mood, energy=energy)
+
