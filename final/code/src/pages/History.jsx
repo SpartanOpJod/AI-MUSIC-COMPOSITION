@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+const API = import.meta.env.VITE_API_URL || null;
+
 export default function History() {
   const [items, setItems] = useState([]);
 
@@ -22,9 +24,13 @@ export default function History() {
 
   useEffect(() => {
     const fetchHistory = async () => {
+      if (!API) {
+        console.warn("API URL not configured");
+        return;
+      }
       try {
         // replace 'devika' with actual username if available
-        const response = await fetch("http://127.0.0.1:8000/get-history/devika");
+        const response = await fetch(`${API}/get-history/devika`);
         if (!response.ok) throw new Error("Failed to fetch history");
         const data = await response.json();
         setItems(data.reverse());

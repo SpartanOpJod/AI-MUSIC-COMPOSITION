@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import Waveform from "../components/Waveform";
 
+const API = import.meta.env.VITE_API_URL || null;
+
 export default function Studio() {
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(20);
@@ -23,9 +25,13 @@ export default function Studio() {
   };
 
   const saveToDB = async (item) => {
+    if (!API) {
+      console.warn("API URL not configured");
+      return;
+    }
     try {
       const username = localStorage.getItem("username") || "guest";
-      await fetch("http://127.0.0.1:8000/save-history", {
+      await fetch(`${API}/save-history`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...item, username }),
@@ -39,12 +45,16 @@ export default function Studio() {
 
 
   const handleGenerate = async () => {
+    if (!API) {
+      setError("Backend API is not configured. Please set VITE_API_URL.");
+      return;
+    }
     setLoading(true);
     setError("");
     setAudioUrl(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/studio-generate", {
+      const response = await fetch(`${API}/studio-generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, duration, mood, tempo, instruments }),
@@ -73,7 +83,8 @@ export default function Studio() {
       });
       // Save to backend DB
 try {
-  await fetch("http://127.0.0.1:8000/save-history", {
+  if (API) {
+    await fetch(`${API}/save-history`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -87,6 +98,7 @@ try {
       timestamp: new Date().toLocaleString(),
     }),
   });
+  }
 } catch (err) {
   console.error("Error saving to DB:", err);
 }

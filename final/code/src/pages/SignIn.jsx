@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
+const AUTH_API = import.meta.env.VITE_AUTH_API_URL || null;
+
 export default function SignIn() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +21,11 @@ export default function SignIn() {
     }
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/signin", {
+      if (!AUTH_API) {
+        setError("Auth service is not configured.");
+        return;
+      }
+      const res = await fetch(`${AUTH_API}/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
