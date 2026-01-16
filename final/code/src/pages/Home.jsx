@@ -100,14 +100,14 @@ export default function Home(){
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Choose your mood</h2>
           <div className="text-sm text-gray-400">10 moods • swipe →</div>
-        </div>handleMoodClick(m.title)
+        </div>
         <div className="flex gap-4 overflow-x-auto pb-4">
           {MOODS.map((m, i) => (
             <div key={i} className="flex-none">
               <MoodCard
                 title={m.title}
                 image={m.img}
-                onClick={() => { localStorage.setItem('muse_mood', m.title); window.location.href = '/studio'; }}
+                onClick={() => handleMoodClick(m.title)}
               />
             </div>
           ))}

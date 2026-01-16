@@ -18,6 +18,15 @@ export default function Studio() {
     return JSON.parse(localStorage.getItem("musicHistory")) || [];
   });
 
+  // Set mood from localStorage if available (from home page click)
+  useEffect(() => {
+    const savedMood = localStorage.getItem('muse_mood');
+    if (savedMood) {
+      setMood(savedMood);
+      localStorage.removeItem('muse_mood'); // Clear it after use
+    }
+  }, []);
+
   const saveToHistory = (item) => {
     const updated = [item, ...history];
     setHistory(updated);

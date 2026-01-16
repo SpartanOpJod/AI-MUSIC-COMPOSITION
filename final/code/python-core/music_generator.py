@@ -3,6 +3,8 @@ import requests
 import base64
 import os
 import tempfile
+import time
+import random
 
 # Your Colab Gradio share URL
 COLAB_URL = os.environ.get("COLAB_URL", "https://7ed2b9011c9364a713.gradio.live")
@@ -31,7 +33,8 @@ def query_musicgen_colab(prompt: str, duration: int = 10, colab_url: str = None,
 def generate_dummy_wav_bytes(prompt: str, duration: int = 10, sr: int = 32000):
     import numpy as np, io, wave
     t = np.linspace(0, duration, int(sr * duration), endpoint=False)
-    freq = 220.0 + (hash(prompt) % 200)
+    # Use timestamp + random for truly unique frequencies
+    freq = 220.0 + ((int(time.time() * 1000000) + random.randint(0, 10000)) % 200)
     audio = 0.3 * np.sin(2 * np.pi * freq * t)
     audio += 0.12 * np.sin(2 * np.pi * (freq*2) * t)
     for i in range(0, len(t), int(sr * (60/120))):
