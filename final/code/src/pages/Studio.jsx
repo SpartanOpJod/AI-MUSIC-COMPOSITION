@@ -90,29 +90,7 @@ export default function Studio() {
         audioUrl: url,
         timestamp: new Date().toLocaleString(),
       });
-      // Save to backend DB
-try {
-  if (API) {
-    await fetch(`${API}/save-history`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: "devika", // replace with actual username if you have login
-      prompt,
-      mood,
-      instruments,
-      tempo,
-      duration,
-      audioUrl: url,
-      timestamp: new Date().toLocaleString(),
-    }),
-  });
-  }
-} catch (err) {
-  console.error("Error saving to DB:", err);
-}
-
-
+      
       saveToDB({
         prompt,
         duration,

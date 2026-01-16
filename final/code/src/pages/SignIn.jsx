@@ -34,6 +34,7 @@ export default function SignIn() {
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("username", data.user.username);
         window.dispatchEvent(new CustomEvent("userChanged", { detail: data.user }));
         navigate("/studio");
       } else {
