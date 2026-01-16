@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
-const AUTH_API = import.meta.env.VITE_AUTH_API_URL || null;
+const API = import.meta.env.VITE_API_URL || null;
 
 export default function SignUp() {
   const [fullName, setFullName] = useState("");
@@ -35,11 +35,11 @@ export default function SignUp() {
     }
 
     try {
-      if (!AUTH_API) {
-        setError("Auth service is not configured.");
+      if (!API) {
+        setError("API service is not configured.");
         return;
       }
-      const res = await fetch(`${AUTH_API}/signup`, {
+      const res = await fetch(`${API}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, username, email, password }),
