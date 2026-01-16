@@ -53,7 +53,8 @@ export default function SignUp() {
         setError(data.error || "Signup failed.");
       }
     } catch (err) {
-      setError("Server error, try again later.");
+      console.error("SignUp Error:", err);
+      setError("Server error: " + (err.message || "try again later"));
     }
   };
 

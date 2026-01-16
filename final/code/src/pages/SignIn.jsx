@@ -40,7 +40,8 @@ export default function SignIn() {
         setError(data.error || "Invalid username or password.");
       }
     } catch (err) {
-      setError("Server error, try again later.");
+      console.error("SignIn Error:", err);
+      setError("Server error: " + (err.message || "try again later"));
     }
   };
 
