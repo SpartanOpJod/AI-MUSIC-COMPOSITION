@@ -10,7 +10,14 @@ import sqlite3
 import time
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+
+# --- CORS Configuration (Production-Safe) ---
+CORS(
+    app,
+    resources={r"/*": {"origins": "*"}},
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
 
 # --- Database setup with absolute paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -363,6 +370,12 @@ def get_users():
 def health():
     """Health check endpoint"""
     return jsonify({"status": "ok"}), 200
+
+# --- OPTIONS Handler (Preflight Request Handler) ---
+@app.route("/<path:path>", methods=["OPTIONS"])
+def options_handler(path):
+    """Handle CORS preflight requests"""
+    return "", 200
 
 if __name__ == "__main__":
     import os
