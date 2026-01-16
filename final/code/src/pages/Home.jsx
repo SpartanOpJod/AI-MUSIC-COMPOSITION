@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Player } from "@lottiefiles/react-lottie-player";
 import CompositionCard from "../components/CompositionCard";
 import MoodCard from "../components/MoodCard";
@@ -48,6 +48,13 @@ const FEEDBACKS = [
 ];
 
 export default function Home(){
+  const navigate = useNavigate();
+  
+  const handleMoodClick = (mood) => {
+    localStorage.setItem('muse_mood', mood);
+    navigate('/studio');
+  };
+
   return (
     <div className="relative min-h-screen text-white">
       {/* Hero */}
@@ -93,7 +100,7 @@ export default function Home(){
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Choose your mood</h2>
           <div className="text-sm text-gray-400">10 moods • swipe →</div>
-        </div>
+        </div>handleMoodClick(m.title)
         <div className="flex gap-4 overflow-x-auto pb-4">
           {MOODS.map((m, i) => (
             <div key={i} className="flex-none">

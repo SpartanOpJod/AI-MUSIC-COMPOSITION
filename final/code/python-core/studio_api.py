@@ -1,11 +1,12 @@
 # studio_api.py
-from flask import Flask, request, send_file, jsonify
+import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import random, numpy as np
 from music_generator import query_musicgen
 from audio_processor import AudioProcessor
 import os
 import sqlite3
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -52,7 +53,8 @@ def studio_generate():
 
     try:
         # ----- Add randomness for uniqueness -----
-        seed = (hash(prompt) + random.randint(0, 100000)) % (2**32)
+        # Use timestamp + random instead of just hash for true randomness
+        seed = (int(time.time() * 1000000) + random.randint(0, 1000000)) % (2**32)
         np.random.seed(seed)
 
         # ----- Generate audio bytes -----
