@@ -169,42 +169,36 @@ def studio_generate():
         if not data:
             return jsonify({"error": "Invalid JSON body"}), 400
         
-        prompt = data.get("prompt", "Calm music")
-        duration = int(data.get("duration", 12))
-        mood = data.get("mood", "Happy")
-        tempo = int(data.get("tempo", 120))
-        instruments = data.get("instruments", "piano")
-        use_colab = data.get("use_colab", True)
-        colab_url = data.get("colab_url", "").strip()
+base_prompt = data.get("prompt", "Calm music")
+duration = int(data.get("duration", 12))
+mood = data.get("mood", "Happy")
+tempo = int(data.get("tempo", 120))
+instruments = data.get("instruments", "piano")
+username = data.get("username", "guest")
 
-        # --- Forward to External ML Service ---
-        if use_colab and colab_url:
-            # Call Colab/Gradio endpoint
-            try:
-                external_response = requests.post(
-                    colab_url,
-                    json={
-                        "prompt": prompt,
-                        "duration": duration,
-                        "mood": mood,
-                        "tempo": tempo,
-                        "instruments": instruments
-                    },
-                    timeout=300  # 5 minutes timeout for generation
-                )
-                
-                if external_response.status_code != 200:
-                    return jsonify({"error": f"External service error: {external_response.status_code}"}), 500
-                
-                # External service returns audio bytes
-                audio_bytes = external_response.content
-                
-            except requests.exceptions.Timeout:
-                return jsonify({"error": "Music generation timeout (took too long)"}), 504
-            except requests.exceptions.RequestException as e:
-                return jsonify({"error": f"External service unavailable: {str(e)}"}), 503
-        else:
-            return jsonify({"error": "No external ML service configured. Set use_colab=true and provide colab_url"}), 400
+# 🔥 merge all controls into ONE prompt
+prompt = (
+    f"{base_prompt}. "
+    f"Mood: {mood}. "
+    f"Tempo: {tempo} BPM. "
+    f"Instrument: {instruments}."
+)
+
+hf_url = os.environ.get("HF_API_URL")
+if not hf_url:
+    return jsonify({"error": "HF_API_URL not set"}), 500
+
+response = requests.post(
+    hf_url,
+    json={"data": [prompt, duration]},
+    timeout=120
+)
+
+if response.status_code != 200:
+    return jsonify({"error": "Hugging Face inference failed"}), 500
+
+    result = response.json()
+    audio_bytes = bytes(result["data"][0])
 
         # --- Save to history ---
         try:
