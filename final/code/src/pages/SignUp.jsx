@@ -30,19 +30,49 @@ export default function SignUp() {
     }
 
     try {
-      if (API) {
-        await fetch(`${API}/signup`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fullName, username, email, password }),
-        });
+      if (!API) {
+        setError("API service is not configured.");
+        return;
       }
 
-      alert("Signup successful (demo mode)");
-      navigate("/signin");
+      // Sign up
+      const signupRes = await fetch(`${API}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, username, email, password }),
+      });
+
+      const signupData = await signupRes.json();
+
+      if (!signupRes.ok) {
+        setError(signupData.error || "Signup failed");
+        return;
+      }
+
+      // Auto sign in after successful signup
+      const signinRes = await fetch(`${API}/signin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const signinData = await signinRes.json();
+
+      if (signinRes.ok) {
+        // Store user data
+        localStorage.setItem("user", JSON.stringify(signinData.user));
+        localStorage.setItem("username", signinData.user.username);
+        window.dispatchEvent(new CustomEvent("userChanged", { detail: signinData.user }));
+        
+        // Go directly to studio
+        navigate("/studio");
+      } else {
+        setError("Signup successful! Please sign in manually.");
+        navigate("/signin");
+      }
     } catch (err) {
-      console.warn("Backend not reachable, continuing in demo mode");
-      navigate("/signin");
+      console.error("Signup Error:", err);
+      setError("Server error: " + (err.message || "try again later"));
     }
   };
 
