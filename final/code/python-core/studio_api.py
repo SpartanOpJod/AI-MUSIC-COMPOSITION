@@ -160,71 +160,69 @@ def signin():
 
 @app.route("/studio-generate", methods=["POST"])
 def studio_generate():
-    """
-    Generate music by forwarding request to external ML service (Colab/Gradio).
-    This backend does NOT run ML inference locally.
-    """
     try:
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid JSON body"}), 400
-        
-base_prompt = data.get("prompt", "Calm music")
-duration = int(data.get("duration", 12))
-mood = data.get("mood", "Happy")
-tempo = int(data.get("tempo", 120))
-instruments = data.get("instruments", "piano")
-username = data.get("username", "guest")
 
-# 🔥 merge all controls into ONE prompt
-prompt = (
-    f"{base_prompt}. "
-    f"Mood: {mood}. "
-    f"Tempo: {tempo} BPM. "
-    f"Instrument: {instruments}."
-)
+        base_prompt = data.get("prompt", "Calm music")
+        duration = int(data.get("duration", 12))
+        mood = data.get("mood", "Happy")
+        tempo = int(data.get("tempo", 120))
+        instruments = data.get("instruments", "piano")
+        username = data.get("username", "guest")
 
-hf_url = os.environ.get("HF_API_URL")
-if not hf_url:
-    return jsonify({"error": "HF_API_URL not set"}), 500
+        # merge UI controls into ONE prompt
+        prompt = (
+            f"{base_prompt}. "
+            f"Mood: {mood}. "
+            f"Tempo: {tempo} BPM. "
+            f"Instrument: {instruments}."
+        )
 
-response = requests.post(
-    hf_url,
-    json={"data": [prompt, duration]},
-    timeout=120
-)
+        hf_url = os.environ.get("HF_API_URL")
+        if not hf_url:
+            return jsonify({"error": "HF_API_URL not set"}), 500
 
-if response.status_code != 200:
-    return jsonify({"error": "Hugging Face inference failed"}), 500
+        response = requests.post(
+            hf_url,
+            json={"data": [prompt, duration]},
+            timeout=120
+        )
 
-    result = response.json()
-    audio_bytes = bytes(result["data"][0])
+        if response.status_code != 200:
+            return jsonify({"error": "Hugging Face inference failed"}), 500
 
-        # --- Save to history ---
+        result = response.json()
+        audio_bytes = bytes(result["data"][0])
+
+        # save history (non-blocking)
         try:
             conn = sqlite3.connect(MUSIC_DB_PATH)
             c = conn.cursor()
-            username = data.get("username", "guest")
-            c.execute("""
-                INSERT INTO music_history (username, prompt, mood, instruments, tempo, duration)
+            c.execute(
+                """
+                INSERT INTO music_history
+                (username, prompt, mood, instruments, tempo, duration)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (username, prompt, mood, instruments, tempo, duration))
+                """,
+                (username, base_prompt, mood, instruments, tempo, duration)
+            )
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"History save error: {e}")
-            # Don't fail the request if history save fails
+            print("History save failed:", e)
 
-        # --- Return audio to frontend ---
         return send_file(
             BytesIO(audio_bytes),
-            mimetype="audio/mpeg",
+            mimetype="audio/wav",
             as_attachment=False
         )
 
     except Exception as e:
-        print(f"Studio generate error: {e}")
+        print("Studio generate error:", e)
         return jsonify({"error": str(e)}), 500
+# --- Music History Routes ---
 
 @app.route("/save-history", methods=["POST"])
 def save_history():
