@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Waveform from "../components/Waveform";
 
 const API = import.meta.env.VITE_API_URL || null;
-const HF_API = "https://spartanop-ai-music-generator.hf.space/api/predict";
+const HF_API = "https://spartanop-ai-music-generator.hf.space/run/predict";
 
 
 export default function Studio() {
