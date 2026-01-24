@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import Waveform from "../components/Waveform";
 
 const API = import.meta.env.VITE_API_URL || null;
+const HF_API = "https://spartanop-ai-music-generator.hf.space/api/predict";
+
 
 export default function Studio() {
   const [prompt, setPrompt] = useState("");
@@ -54,60 +56,66 @@ export default function Studio() {
 
 
   const handleGenerate = async () => {
-    if (!API) {
-      setError("Backend API is not configured. Please set VITE_API_URL.");
-      return;
+  setLoading(true);
+  setError("");
+  setAudioUrl(null);
+
+  try {
+    const combinedPrompt = `${prompt || "music"}. Mood: ${mood}. Tempo: ${tempo} BPM. Instrument: ${instruments}.`;
+
+    const response = await fetch(HF_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        data: [combinedPrompt, duration],
+      }),
+    });
+
+    if (!response.ok) throw new Error(`HF error ${response.status}`);
+
+    const result = await response.json();
+
+    const audioBase64 = result.data.find(
+      (item) => item?.data && typeof item.data === "string"
+    )?.data;
+
+    if (!audioBase64) throw new Error("No audio returned");
+
+    const byteString = atob(audioBase64.split(",").pop());
+    const bytes = new Uint8Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      bytes[i] = byteString.charCodeAt(i);
     }
-    setLoading(true);
-    setError("");
-    setAudioUrl(null);
 
-    try {
-      const response = await fetch(`${API}/studio-generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, duration, mood, tempo, instruments }),
-      });
+    const blob = new Blob([bytes], { type: "audio/wav" });
+    const url = URL.createObjectURL(blob);
+    setAudioUrl(url);
 
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    saveToHistory({
+      prompt,
+      duration,
+      mood,
+      tempo,
+      instruments,
+      audioUrl: url,
+      timestamp: new Date().toLocaleString(),
+    });
 
-      const blob = await response.blob();
-      if (!blob.type.startsWith("audio/")) {
-        setError("Backend returned non-audio response");
-        setLoading(false);
-        return;
-      }
+    saveToDB({
+      prompt,
+      duration,
+      mood,
+      tempo,
+      instruments,
+    });
 
-      const url = URL.createObjectURL(blob);
-      setAudioUrl(url);
+  } catch (err) {
+    setError("❌ Music generation failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      saveToHistory({
-        prompt,
-        duration,
-        mood,
-        tempo,
-        instruments,
-        audioUrl: url,
-        timestamp: new Date().toLocaleString(),
-      });
-      
-      saveToDB({
-        prompt,
-        duration,
-        mood,
-        tempo,
-        instruments,
-        audioUrl: url,
-        timestamp: new Date().toLocaleString(),
-      });
-      
-
-    } catch (err) {
-      setError("❌ Failed to fetch: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleClearHistory = () => {
     setHistory([]);
