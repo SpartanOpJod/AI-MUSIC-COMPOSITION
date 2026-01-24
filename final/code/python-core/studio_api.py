@@ -5,6 +5,7 @@ import requests
 import os
 import sqlite3
 import time
+import base64
 from io import BytesIO
 
 app = Flask(__name__)
@@ -194,7 +195,7 @@ def studio_generate():
             return jsonify({"error": "Hugging Face inference failed"}), 500
 
         result = response.json()
-        audio_bytes = bytes(result["data"][0])
+        audio_bytes = base64.b64decode(result["data"][0])
 
         # save history (non-blocking)
         try:
