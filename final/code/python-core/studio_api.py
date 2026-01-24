@@ -162,7 +162,10 @@ def signin():
 def extract_audio_from_hf_response(result):
     """
     Safely extract base64 audio from HF Gradio response.
-    Handles multiple response formats.
+    
+    HF Gradio Spaces can return multiple outputs in result["data"].
+    Audio is NOT always at index 0 - this function scans ALL items.
+    Audio is identified as: a dict containing a "data" field with base64 string.
     
     Returns: (audio_b64_string, error_message or None)
     """
@@ -177,20 +180,20 @@ def extract_audio_from_hf_response(result):
         if not isinstance(data_list, list) or len(data_list) == 0:
             return None, f"'data' is not a non-empty list: {type(data_list)}"
         
-        data_item = data_list[0]
+        # Scan through ALL items to find audio
+        # HF Gradio returns multiple outputs: text, sliders, audio, labels, etc.
+        # Audio format: {"name": "audio.wav", "data": "base64..."}
+        for idx, data_item in enumerate(data_list):
+            if isinstance(data_item, dict) and "data" in data_item:
+                audio_b64 = data_item["data"]
+                # Verify it's a non-empty string (base64)
+                if isinstance(audio_b64, str) and len(audio_b64) > 10:
+                    print(f"✅ Found audio at index {idx}: {len(audio_b64)} chars")
+                    return audio_b64, None
         
-        # Format 1: {"name": "audio.wav", "data": "base64..."}
-        if isinstance(data_item, dict):
-            if "data" in data_item:
-                return data_item["data"], None
-            else:
-                return None, f"Dict in 'data' has no 'data' key: {data_item.keys()}"
-        
-        # Format 2: ["base64..."]
-        if isinstance(data_item, str):
-            return data_item, None
-        
-        return None, f"Unexpected data format: {type(data_item)}"
+        # No audio found in any output - provide diagnostic info
+        data_types = [f"[{idx}] {type(item).__name__}" for idx, item in enumerate(data_list)]
+        return None, f"No audio found in result['data']. Output items: {', '.join(data_types)}"
     
     except Exception as e:
         return None, f"Exception extracting audio: {e}"
