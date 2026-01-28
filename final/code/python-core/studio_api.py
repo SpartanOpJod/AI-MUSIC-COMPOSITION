@@ -234,12 +234,39 @@ def studio_generate():
         for attempt in range(max_retries):
             try:
                 print(f"[Attempt {attempt + 1}] Calling HF API: {hf_url}")
-                response = requests.post(
-                    hf_url,
-                    json={"data": [prompt, duration]},
-                    timeout=60,  # Reduced from 120 for Render free tier
-                    headers={"Content-Type": "application/json"}
-                )
+                # STEP 1: trigger generation
+trigger = requests.post(
+    f"{hf_url}/gradio_api/call/generate_music",
+    json={"data": [prompt, duration]},
+    headers={"Content-Type": "application/json"},
+    timeout=30
+)
+
+if trigger.status_code != 200:
+    return jsonify({"error": "Failed to start generation"}), 502
+
+event_id = trigger.json().get("event_id")
+if not event_id:
+    return jsonify({"error": "No event_id returned"}), 502
+
+# STEP 2: fetch generated result
+stream = requests.get(
+    f"{hf_url}/gradio_api/call/generate_music/{event_id}",
+    stream=True,
+    timeout=120
+)
+
+audio_b64 = None
+for line in stream.iter_lines():
+    if line:
+        decoded = line.decode("utf-8")
+        if '"data"' in decoded:
+            audio_b64 = decoded.split('"')[-2]
+            break
+
+if not audio_b64:
+    return jsonify({"error": "No audio received"}), 502
+
                 
                 print(f"HF Response Status: {response.status_code}")
                 
