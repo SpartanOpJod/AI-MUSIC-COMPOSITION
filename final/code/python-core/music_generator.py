@@ -7,7 +7,7 @@ import time
 import random
 
 # Your Colab Gradio share URL
-COLAB_URL = os.environ.get("COLAB_URL", "https://7ed2b9011c9364a713.gradio.live")
+COLAB_URL = os.environ.get("COLAB_URL", "https://huggingface.co/spaces/SpartanOp/AI_Music_Generator")
 
 def query_musicgen_colab(prompt: str, duration: int = 10, colab_url: str = None, timeout: int = 600):
     url = colab_url or COLAB_URL
