@@ -55,6 +55,27 @@ def init_music_db():
 init_users_db()
 init_music_db()
 
+@app.route("/signin", methods=["POST", "OPTIONS"])
+def signin():
+    if request.method == "OPTIONS":
+        return "", 200
+
+    data = request.get_json()
+    return jsonify({
+        "message": "Signin successful",
+        "user": {
+            "username": data.get("username", "guest")
+        }
+    }), 200
+
+
+@app.route("/signup", methods=["POST", "OPTIONS"])
+def signup():
+    if request.method == "OPTIONS":
+        return "", 200
+
+    return jsonify({"message": "Signup successful"}), 201
+
 
 @app.route("/studio-generate", methods=["POST"])
 def studio_generate():
