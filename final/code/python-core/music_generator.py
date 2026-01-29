@@ -3,12 +3,11 @@ import os
 
 COLAB_URL = os.environ.get(
     "COLAB_URL",
-    "https://huggingface.co/spaces/SpartanOp/AI_Music_Generator"
+    "https://spartanop-ai-music-generator.hf.space"
 )
 
-client = Client(COLAB_URL)
-
-def query_musicgen(prompt, duration, mood, energy, use_colab=True):
+def query_musicgen(prompt, duration, mood=None, energy=None, use_colab=True):
+    client = Client(COLAB_URL)
     audio, _ = client.predict(
         prompt,
         duration,
