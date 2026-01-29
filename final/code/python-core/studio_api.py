@@ -98,9 +98,6 @@ def studio_generate():
     audio_bytes = query_musicgen(
         prompt=prompt,
         duration=duration,
-        mood=mood,
-        energy=energy,
-        use_colab=True,
     )
 
     try:
