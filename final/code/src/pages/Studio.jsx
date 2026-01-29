@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Waveform from "../components/Waveform";
 
 const API = import.meta.env.VITE_API_URL;
 
 export default function Studio() {
+  const controllerRef = useRef(null);
+
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(20);
   const [mood, setMood] = useState("Happy");
@@ -36,9 +38,9 @@ export default function Studio() {
     setError("");
     setAudioUrl(null);
 
-    try {
-      if (!API) throw new Error("API not configured");
+    controllerRef.current = new AbortController();
 
+    try {
       const res = await fetch(`${API}/studio-generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,9 +52,10 @@ export default function Studio() {
           instruments,
           username: localStorage.getItem("username") || "guest",
         }),
+        signal: controllerRef.current.signal,
       });
 
-      if (!res.ok) throw new Error("Generation failed");
+      if (!res.ok) throw new Error();
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -67,12 +70,18 @@ export default function Studio() {
         audioUrl: url,
         timestamp: new Date().toLocaleString(),
       });
-
     } catch (e) {
-      setError("❌ Music generation failed");
+      if (e.name !== "AbortError") {
+        setError("❌ Music generation failed");
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStop = () => {
+    controllerRef.current?.abort();
+    setLoading(false);
   };
 
   const handleClearHistory = () => {
@@ -88,27 +97,37 @@ export default function Studio() {
 
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label>Prompt</label>
-            <textarea
-              className="w-full p-3 rounded bg-gray-800"
-              rows="3"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-            />
-          </div>
+          <textarea
+            className="w-full p-3 rounded bg-gray-800"
+            rows="3"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
 
           <div className="space-y-4">
-            <input type="number" min="5" max="30" value={duration}
+            <input
+              type="number"
+              min="5"
+              max="30"
+              value={duration}
               onChange={(e) => setDuration(+e.target.value)}
-              className="w-full p-2 rounded bg-gray-800" />
+              className="w-full p-2 rounded bg-gray-800"
+            />
 
-            <input type="number" min="60" max="200" value={tempo}
+            <input
+              type="number"
+              min="60"
+              max="200"
+              value={tempo}
               onChange={(e) => setTempo(+e.target.value)}
-              className="w-full p-2 rounded bg-gray-800" />
+              className="w-full p-2 rounded bg-gray-800"
+            />
 
-            <select value={mood} onChange={(e) => setMood(e.target.value)}
-              className="w-full p-2 rounded bg-gray-800">
+            <select
+              value={mood}
+              onChange={(e) => setMood(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800"
+            >
               <option>Happy</option>
               <option>Sad</option>
               <option>Calm</option>
@@ -117,23 +136,37 @@ export default function Studio() {
               <option>Mysterious</option>
             </select>
 
-            <input value={instruments}
+            <input
+              value={instruments}
               onChange={(e) => setInstruments(e.target.value)}
-              className="w-full p-2 rounded bg-gray-800" />
+              className="w-full p-2 rounded bg-gray-800"
+            />
           </div>
         </div>
 
-        <button onClick={handleGenerate} disabled={loading}
-          className="w-full py-3 rounded bg-primary text-black font-bold">
+        <button
+          onClick={handleGenerate}
+          disabled={loading}
+          className="w-full py-3 rounded bg-primary text-black font-bold"
+        >
           {loading ? "Generating..." : "🎶 Generate Music"}
         </button>
+
+        {loading && (
+          <button
+            onClick={handleStop}
+            className="w-full py-2 rounded bg-red-600 font-bold"
+          >
+            ⛔ Stop Generation
+          </button>
+        )}
 
         {error && <p className="text-red-400">{error}</p>}
 
         {audioUrl && (
           <div className="grid grid-cols-3 gap-6 mt-6">
             <div className="col-span-2 space-y-4">
-              <audio controls src={audioUrl} />
+              <audio controls src={audioUrl} className="w-full" />
               <Waveform audioUrl={audioUrl} />
             </div>
           </div>
@@ -141,13 +174,18 @@ export default function Studio() {
 
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">History</h2>
-          <button onClick={handleClearHistory}
-            className="mb-4 px-3 py-1 bg-red-600 rounded">
+          <button
+            onClick={handleClearHistory}
+            className="mb-4 px-3 py-1 bg-red-600 rounded"
+          >
             Clear History
           </button>
 
           {history.map((h, i) => (
-            <audio key={i} controls src={h.audioUrl} className="w-full mb-2" />
+            <div key={i} className="mb-3">
+              <p className="text-sm text-gray-400">{h.timestamp}</p>
+              <audio controls src={h.audioUrl} className="w-full" />
+            </div>
           ))}
         </div>
       </div>

@@ -4,46 +4,12 @@ const API = import.meta.env.VITE_API_URL || null;
 
 export default function History() {
   const [items, setItems] = useState([]);
-
-  // useEffect(() => {
-  //   // Load history from Studio page
-  //   const raw = localStorage.getItem("musicHistory"); // key used in Studio.jsx
-  //   const history = raw ? JSON.parse(raw) : [];
-  //   setItems(history.reverse()); // show latest first
-  // }, []);
-
-
-  // useEffect(() => {
-  //   const username = localStorage.getItem("username") || "guest";
   
-  //   fetch(`http://127.0.0.1:8000/get-history/${username}`)
-  //     .then(res => res.json())
-  //     .then(data => setItems(data.reverse()))
-  //     .catch(err => console.error("Failed to load history:", err));
-  // }, []);
-
   useEffect(() => {
-    const fetchHistory = async () => {
-      if (!API) {
-        console.warn("API URL not configured");
-        return;
-      }
-      try {
-        // replace 'devika' with actual username if available
-        const response = await fetch(`${API}/get-history/devika`);
-        if (!response.ok) throw new Error("Failed to fetch history");
-        const data = await response.json();
-        setItems(data.reverse());
-      } catch (error) {
-        console.error("Error fetching history:", error);
-      }
-    };
-  
-    fetchHistory();
+    const raw = localStorage.getItem("musicHistory");
+    setItems(raw ? JSON.parse(raw).reverse() : []);
   }, []);
   
-  
-
   return (
     <div className="bg-secondary min-h-screen py-12 px-6 font-sans">
       <div className="max-w-6xl mx-auto">

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { User, Music, Calendar, Heart, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -10,22 +13,30 @@ export default function Profile() {
     favoriteMood: "Happy",
   });
 
-  // Load user from localStorage on mount
+  // ✅ FIX: load user correctly from localStorage
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser) {
-      setUser({
-        fullName: storedUser.fullName,
-        email: storedUser.email,
-        joined: storedUser.joined || new Date().toISOString().split("T")[0],
-        totalTracks: storedUser.totalTracks || 0,
-        favoriteMood: storedUser.favoriteMood || "Happy",
-      });
+    const storedUser =
+      JSON.parse(localStorage.getItem("user")) ||
+      {
+        fullName: localStorage.getItem("username"),
+        email: localStorage.getItem("email"),
+      };
 
-      setFormData({
+    if (storedUser?.fullName) {
+      const normalizedUser = {
         fullName: storedUser.fullName,
-        email: storedUser.email,
+        email: storedUser.email || "Not provided",
+        joined: storedUser.joined || new Date().toISOString().split("T")[0],
+        totalTracks:
+          JSON.parse(localStorage.getItem("musicHistory"))?.length || 0,
         favoriteMood: storedUser.favoriteMood || "Happy",
+      };
+
+      setUser(normalizedUser);
+      setFormData({
+        fullName: normalizedUser.fullName,
+        email: normalizedUser.email,
+        favoriteMood: normalizedUser.favoriteMood,
       });
     }
   }, []);
@@ -38,15 +49,11 @@ export default function Profile() {
     const updatedUser = { ...user, ...formData };
     setUser(updatedUser);
 
-    // Update localStorage so Header and Profile stay in sync
-    const storedUser = JSON.parse(localStorage.getItem("user")) || {};
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ ...storedUser, ...formData })
-    );
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    localStorage.setItem("username", formData.fullName);
+    localStorage.setItem("email", formData.email);
 
     setIsEditing(false);
-    alert("Profile updated successfully!");
   };
 
   if (!user) {
@@ -77,8 +84,8 @@ export default function Profile() {
           </button>
         </div>
 
-        {/* User Info Section */}
-        <div className="bg-gray-800 rounded-2xl p-8 flex flex-col md:flex-row items-center md:justify-between shadow-lg hover:shadow-2xl transition">
+        {/* User Info */}
+        <div className="bg-gray-800 rounded-2xl p-8 flex flex-col md:flex-row items-center md:justify-between shadow-lg">
           <div className="flex items-center gap-6 mb-6 md:mb-0">
             <div className="bg-primary/20 p-6 rounded-full">
               <User size={48} />
@@ -89,6 +96,7 @@ export default function Profile() {
               <p className="text-gray-400 text-sm">Joined: {user.joined}</p>
             </div>
           </div>
+
           <div className="flex gap-8">
             <div className="text-center">
               <p className="text-xl font-bold">{user.totalTracks}</p>
@@ -101,66 +109,71 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* ✅ FIX: Quick Actions now navigate */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="bg-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center shadow hover:shadow-xl transition">
+          <div
+            onClick={() => navigate("/studio")}
+            className="cursor-pointer bg-gray-800 rounded-2xl p-6 flex flex-col items-center shadow hover:shadow-xl"
+          >
             <Music size={36} className="text-primary mb-2" />
             <p>My Tracks</p>
           </div>
-          <div className="bg-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center shadow hover:shadow-xl transition">
-            <Heart size={36} className="text-accent mb-2" />
-            <p>Favorites</p>
-          </div>
-          <div className="bg-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center shadow hover:shadow-xl transition">
+
+          <div
+            onClick={() => navigate("/history")}
+            className="cursor-pointer bg-gray-800 rounded-2xl p-6 flex flex-col items-center shadow hover:shadow-xl"
+          >
             <Calendar size={36} className="text-primary mb-2" />
             <p>History</p>
           </div>
-          <div className="bg-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center shadow hover:shadow-xl transition">
+
+          <div className="bg-gray-800 rounded-2xl p-6 flex flex-col items-center opacity-60">
+            <Heart size={36} className="text-accent mb-2" />
+            <p>Favorites</p>
+          </div>
+
+          <div className="bg-gray-800 rounded-2xl p-6 flex flex-col items-center opacity-60">
             <User size={36} className="text-accent mb-2" />
             <p>Settings</p>
           </div>
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* Edit Profile Modal (unchanged) */}
       {isEditing && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md relative shadow-2xl">
+          <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md relative">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
               onClick={() => setIsEditing(false)}
             >
               <X size={24} />
             </button>
-            <h2 className="text-2xl font-bold mb-4 text-white">Edit Profile</h2>
+
+            <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
+
             <div className="flex flex-col gap-4">
               <input
-                type="text"
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="Full Name"
-                className="p-3 rounded-lg bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                className="p-3 rounded bg-gray-800"
               />
               <input
-                type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Email"
-                className="p-3 rounded-lg bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                className="p-3 rounded bg-gray-800"
               />
               <input
-                type="text"
                 name="favoriteMood"
                 value={formData.favoriteMood}
                 onChange={handleChange}
-                placeholder="Favorite Mood"
-                className="p-3 rounded-lg bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                className="p-3 rounded bg-gray-800"
               />
               <button
                 onClick={handleSave}
-                className="bg-primary px-4 py-2 rounded-lg font-semibold hover:bg-primary/80 transition"
+                className="bg-primary py-2 rounded font-semibold"
               >
                 Save Changes
               </button>
