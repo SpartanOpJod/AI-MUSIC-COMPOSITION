@@ -10,3 +10,4 @@ torch==2.1.0+cpu
 transformers==4.35.2
 sentence-transformers==2.2.2
 huggingface_hub==0.19.4
+gradio-client
