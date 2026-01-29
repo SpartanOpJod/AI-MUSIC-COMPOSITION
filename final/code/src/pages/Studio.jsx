@@ -1,10 +1,7 @@
-// src/pages/Studio.jsx
 import React, { useState, useEffect } from "react";
 import Waveform from "../components/Waveform";
 
-const API = import.meta.env.VITE_API_URL || null;
-const HF_API = "https://spartanop-ai-music-generator.hf.space/run/predict";
-
+const API = import.meta.env.VITE_API_URL;
 
 export default function Studio() {
   const [prompt, setPrompt] = useState("");
@@ -20,12 +17,11 @@ export default function Studio() {
     return JSON.parse(localStorage.getItem("musicHistory")) || [];
   });
 
-  // Set mood from localStorage if available (from home page click)
   useEffect(() => {
-    const savedMood = localStorage.getItem('muse_mood');
+    const savedMood = localStorage.getItem("muse_mood");
     if (savedMood) {
       setMood(savedMood);
-      localStorage.removeItem('muse_mood'); // Clear it after use
+      localStorage.removeItem("muse_mood");
     }
   }, []);
 
@@ -36,10 +32,7 @@ export default function Studio() {
   };
 
   const saveToDB = async (item) => {
-    if (!API) {
-      console.warn("API URL not configured");
-      return;
-    }
+    if (!API) return;
     try {
       const username = localStorage.getItem("username") || "guest";
       await fetch(`${API}/save-history`, {
@@ -47,75 +40,62 @@ export default function Studio() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...item, username }),
       });
-    } catch (err) {
-      console.error("Failed to save to DB:", err);
-    }
+    } catch {}
   };
-  
-
-
 
   const handleGenerate = async () => {
-  setLoading(true);
-  setError("");
-  setAudioUrl(null);
+    setLoading(true);
+    setError("");
+    setAudioUrl(null);
 
-  try {
-    const combinedPrompt = `${prompt || "music"}. Mood: ${mood}. Tempo: ${tempo} BPM. Instrument: ${instruments}.`;
+    try {
+      if (!API) throw new Error("Backend API missing");
 
-    const response = await fetch(HF_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        data: [combinedPrompt, duration],
-      }),
-    });
+      const username = localStorage.getItem("username") || "guest";
 
-    if (!response.ok) throw new Error(`HF error ${response.status}`);
+      const response = await fetch(`${API}/studio-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          duration,
+          mood,
+          tempo,
+          instruments,
+          username,
+          energy: 5,
+        }),
+      });
 
-    const result = await response.json();
+      if (!response.ok) throw new Error("Backend error");
 
-    const audioBase64 = result.data.find(
-      (item) => item?.data && typeof item.data === "string"
-    )?.data;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
 
-    if (!audioBase64) throw new Error("No audio returned");
+      saveToHistory({
+        prompt,
+        duration,
+        mood,
+        tempo,
+        instruments,
+        audioUrl: url,
+        timestamp: new Date().toLocaleString(),
+      });
 
-    const byteString = atob(audioBase64.split(",").pop());
-    const bytes = new Uint8Array(byteString.length);
-    for (let i = 0; i < byteString.length; i++) {
-      bytes[i] = byteString.charCodeAt(i);
+      saveToDB({
+        prompt,
+        duration,
+        mood,
+        tempo,
+        instruments,
+      });
+    } catch {
+      setError("❌ Music generation failed");
+    } finally {
+      setLoading(false);
     }
-
-    const blob = new Blob([bytes], { type: "audio/wav" });
-    const url = URL.createObjectURL(blob);
-    setAudioUrl(url);
-
-    saveToHistory({
-      prompt,
-      duration,
-      mood,
-      tempo,
-      instruments,
-      audioUrl: url,
-      timestamp: new Date().toLocaleString(),
-    });
-
-    saveToDB({
-      prompt,
-      duration,
-      mood,
-      tempo,
-      instruments,
-    });
-
-  } catch (err) {
-    setError("❌ Music generation failed");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleClearHistory = () => {
     setHistory([]);
@@ -129,10 +109,9 @@ export default function Studio() {
       </h1>
 
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Prompt & Controls */}
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label>Prompt / Mood</label>
+            <label>Prompt</label>
             <textarea
               className="w-full p-3 rounded bg-gray-800 text-white"
               rows="3"
@@ -140,33 +119,36 @@ export default function Studio() {
               onChange={(e) => setPrompt(e.target.value)}
             />
           </div>
+
           <div className="space-y-4">
             <div>
               <label>Duration (sec)</label>
               <input
                 type="number"
                 min="5"
-                max="60"
-                className="w-full p-2 rounded bg-gray-800 text-white"
+                max="30"
+                className="w-full p-2 rounded bg-gray-800"
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
               />
             </div>
+
             <div>
               <label>Tempo (BPM)</label>
               <input
                 type="number"
                 min="60"
                 max="200"
-                className="w-full p-2 rounded bg-gray-800 text-white"
+                className="w-full p-2 rounded bg-gray-800"
                 value={tempo}
                 onChange={(e) => setTempo(Number(e.target.value))}
               />
             </div>
+
             <div>
               <label>Mood</label>
               <select
-                className="w-full p-2 rounded bg-gray-800 text-white"
+                className="w-full p-2 rounded bg-gray-800"
                 value={mood}
                 onChange={(e) => setMood(e.target.value)}
               >
@@ -178,11 +160,11 @@ export default function Studio() {
                 <option>Mysterious</option>
               </select>
             </div>
+
             <div>
               <label>Main Instrument</label>
               <input
-                type="text"
-                className="w-full p-2 rounded bg-gray-800 text-white"
+                className="w-full p-2 rounded bg-gray-800"
                 value={instruments}
                 onChange={(e) => setInstruments(e.target.value)}
               />
@@ -190,70 +172,60 @@ export default function Studio() {
           </div>
         </div>
 
-        {/* Generate Button */}
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="w-full py-3 rounded bg-primary text-black font-bold hover:bg-accent transition"
+          className="w-full py-3 rounded bg-primary text-black font-bold"
         >
           {loading ? "Generating..." : "🎶 Generate Music"}
         </button>
 
         {error && <p className="text-red-400">{error}</p>}
 
-        {/* Audio Player + Waveform + Parameters */}
         {audioUrl && (
           <div className="mt-6 grid grid-cols-3 gap-6">
             <div className="col-span-2 space-y-4">
               <audio controls src={audioUrl} className="w-full" />
               <Waveform audioUrl={audioUrl} />
-              {/* {audioUrl && <WaveformPlayer audioUrl={audioUrl} />} */}
-
-              {/* <Waveform 
-              audioUrl={audioUrl} 
-              controls={false}   // hides the audio player
-              play={false}       // disables automatic play */}
-{/* /> */}
-
-              <a href={audioUrl} download="music.mp3" className="text-accent underline">
-                ⬇️ Download MP3
+              <a
+                href={audioUrl}
+                download="music.wav"
+                className="text-accent underline"
+              >
+                ⬇️ Download WAV
               </a>
             </div>
-            <div className="space-y-2 bg-gray-800 p-4 rounded">
-              <h3 className="text-lg font-bold">🎵 Music Parameters</h3>
+
+            <div className="bg-gray-800 p-4 rounded space-y-2">
               <p><strong>Mood:</strong> {mood}</p>
-              <p><strong>Duration:</strong> {duration} sec</p>
+              <p><strong>Duration:</strong> {duration}s</p>
               <p><strong>Tempo:</strong> {tempo} BPM</p>
-              <p><strong>Instruments:</strong> {instruments}</p>
+              <p><strong>Instrument:</strong> {instruments}</p>
             </div>
           </div>
         )}
 
-        {/* History Section */}
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">🕘 History</h2>
           <button
             onClick={handleClearHistory}
-            className="mb-4 py-1 px-3 bg-red-600 rounded hover:bg-red-700"
+            className="mb-4 px-3 py-1 bg-red-600 rounded"
           >
             Clear History
           </button>
+
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {history.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-3 gap-4 p-2 bg-gray-800 rounded">
+              <div key={idx} className="grid grid-cols-3 gap-4 bg-gray-800 p-2 rounded">
                 <div className="col-span-2">
                   <p><strong>Prompt:</strong> {item.prompt}</p>
                   <audio controls src={item.audioUrl} className="w-full mt-1" />
-                  <a href={item.audioUrl} download="music.mp3" className="text-accent underline">
-                    ⬇️ Download MP3
-                  </a>
                 </div>
-                <div className="space-y-1">
-                  <p><strong>Mood:</strong> {item.mood}</p>
-                  <p><strong>Duration:</strong> {item.duration} sec</p>
-                  <p><strong>Tempo:</strong> {item.tempo}</p>
-                  <p><strong>Instruments:</strong> {item.instruments}</p>
-                  <p className="text-sm text-gray-400">{item.timestamp}</p>
+                <div className="text-sm space-y-1">
+                  <p>Mood: {item.mood}</p>
+                  <p>Duration: {item.duration}s</p>
+                  <p>Tempo: {item.tempo}</p>
+                  <p>{item.timestamp}</p>
                 </div>
               </div>
             ))}
