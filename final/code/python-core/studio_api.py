@@ -4,8 +4,6 @@ import os
 import sqlite3
 from io import BytesIO
 
-from music_generator import query_musicgen
-from mood_analyzer import MoodAnalyzer
 
 app = Flask(__name__)
 
