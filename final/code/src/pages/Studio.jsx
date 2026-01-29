@@ -13,9 +13,9 @@ export default function Studio() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [error, setError] = useState("");
 
-  const [history, setHistory] = useState(() => {
-    return JSON.parse(localStorage.getItem("musicHistory")) || [];
-  });
+  const [history, setHistory] = useState(() =>
+    JSON.parse(localStorage.getItem("musicHistory")) || []
+  );
 
   useEffect(() => {
     const savedMood = localStorage.getItem("muse_mood");
@@ -31,29 +31,15 @@ export default function Studio() {
     localStorage.setItem("musicHistory", JSON.stringify(updated));
   };
 
-  const saveToDB = async (item) => {
-    if (!API) return;
-    try {
-      const username = localStorage.getItem("username") || "guest";
-      await fetch(`${API}/save-history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...item, username }),
-      });
-    } catch {}
-  };
-
   const handleGenerate = async () => {
     setLoading(true);
     setError("");
     setAudioUrl(null);
 
     try {
-      if (!API) throw new Error("Backend API missing");
+      if (!API) throw new Error("API not configured");
 
-      const username = localStorage.getItem("username") || "guest";
-
-      const response = await fetch(`${API}/studio-generate`, {
+      const res = await fetch(`${API}/studio-generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -62,14 +48,13 @@ export default function Studio() {
           mood,
           tempo,
           instruments,
-          username,
-          energy: 5,
+          username: localStorage.getItem("username") || "guest",
         }),
       });
 
-      if (!response.ok) throw new Error("Backend error");
+      if (!res.ok) throw new Error("Generation failed");
 
-      const blob = await response.blob();
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
 
@@ -83,14 +68,7 @@ export default function Studio() {
         timestamp: new Date().toLocaleString(),
       });
 
-      saveToDB({
-        prompt,
-        duration,
-        mood,
-        tempo,
-        instruments,
-      });
-    } catch {
+    } catch (e) {
       setError("❌ Music generation failed");
     } finally {
       setLoading(false);
@@ -113,7 +91,7 @@ export default function Studio() {
           <div>
             <label>Prompt</label>
             <textarea
-              className="w-full p-3 rounded bg-gray-800 text-white"
+              className="w-full p-3 rounded bg-gray-800"
               rows="3"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -121,116 +99,56 @@ export default function Studio() {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label>Duration (sec)</label>
-              <input
-                type="number"
-                min="5"
-                max="30"
-                className="w-full p-2 rounded bg-gray-800"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-              />
-            </div>
+            <input type="number" min="5" max="30" value={duration}
+              onChange={(e) => setDuration(+e.target.value)}
+              className="w-full p-2 rounded bg-gray-800" />
 
-            <div>
-              <label>Tempo (BPM)</label>
-              <input
-                type="number"
-                min="60"
-                max="200"
-                className="w-full p-2 rounded bg-gray-800"
-                value={tempo}
-                onChange={(e) => setTempo(Number(e.target.value))}
-              />
-            </div>
+            <input type="number" min="60" max="200" value={tempo}
+              onChange={(e) => setTempo(+e.target.value)}
+              className="w-full p-2 rounded bg-gray-800" />
 
-            <div>
-              <label>Mood</label>
-              <select
-                className="w-full p-2 rounded bg-gray-800"
-                value={mood}
-                onChange={(e) => setMood(e.target.value)}
-              >
-                <option>Happy</option>
-                <option>Sad</option>
-                <option>Calm</option>
-                <option>Energetic</option>
-                <option>Romantic</option>
-                <option>Mysterious</option>
-              </select>
-            </div>
+            <select value={mood} onChange={(e) => setMood(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800">
+              <option>Happy</option>
+              <option>Sad</option>
+              <option>Calm</option>
+              <option>Energetic</option>
+              <option>Romantic</option>
+              <option>Mysterious</option>
+            </select>
 
-            <div>
-              <label>Main Instrument</label>
-              <input
-                className="w-full p-2 rounded bg-gray-800"
-                value={instruments}
-                onChange={(e) => setInstruments(e.target.value)}
-              />
-            </div>
+            <input value={instruments}
+              onChange={(e) => setInstruments(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800" />
           </div>
         </div>
 
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="w-full py-3 rounded bg-primary text-black font-bold"
-        >
+        <button onClick={handleGenerate} disabled={loading}
+          className="w-full py-3 rounded bg-primary text-black font-bold">
           {loading ? "Generating..." : "🎶 Generate Music"}
         </button>
 
         {error && <p className="text-red-400">{error}</p>}
 
         {audioUrl && (
-          <div className="mt-6 grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-6 mt-6">
             <div className="col-span-2 space-y-4">
-              <audio controls src={audioUrl} className="w-full" />
+              <audio controls src={audioUrl} />
               <Waveform audioUrl={audioUrl} />
-              <a
-                href={audioUrl}
-                download="music.wav"
-                className="text-accent underline"
-              >
-                ⬇️ Download WAV
-              </a>
-            </div>
-
-            <div className="bg-gray-800 p-4 rounded space-y-2">
-              <p><strong>Mood:</strong> {mood}</p>
-              <p><strong>Duration:</strong> {duration}s</p>
-              <p><strong>Tempo:</strong> {tempo} BPM</p>
-              <p><strong>Instrument:</strong> {instruments}</p>
             </div>
           </div>
         )}
 
         <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">🕘 History</h2>
-          <button
-            onClick={handleClearHistory}
-            className="mb-4 px-3 py-1 bg-red-600 rounded"
-          >
+          <h2 className="text-2xl font-bold mb-4">History</h2>
+          <button onClick={handleClearHistory}
+            className="mb-4 px-3 py-1 bg-red-600 rounded">
             Clear History
           </button>
 
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {history.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-3 gap-4 bg-gray-800 p-2 rounded">
-                <div className="col-span-2">
-                  <p><strong>Prompt:</strong> {item.prompt}</p>
-                  <audio controls src={item.audioUrl} className="w-full mt-1" />
-                </div>
-                <div className="text-sm space-y-1">
-                  <p>Mood: {item.mood}</p>
-                  <p>Duration: {item.duration}s</p>
-                  <p>Tempo: {item.tempo}</p>
-                  <p>{item.timestamp}</p>
-                </div>
-              </div>
-            ))}
-            {history.length === 0 && <p>No history yet.</p>}
-          </div>
+          {history.map((h, i) => (
+            <audio key={i} controls src={h.audioUrl} className="w-full mb-2" />
+          ))}
         </div>
       </div>
     </div>
