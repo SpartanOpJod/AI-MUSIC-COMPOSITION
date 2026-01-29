@@ -30,12 +30,8 @@ export default function SignUp() {
     }
 
     try {
-      if (!API) {
-        setError("API service is not configured.");
-        return;
-      }
+      if (!API) throw new Error("API missing");
 
-      // Sign up
       const signupRes = await fetch(`${API}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,13 +39,12 @@ export default function SignUp() {
       });
 
       const signupData = await signupRes.json();
-
       if (!signupRes.ok) {
         setError(signupData.error || "Signup failed");
         return;
       }
 
-      // Auto sign in after successful signup
+      // Auto sign-in
       const signinRes = await fetch(`${API}/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -57,22 +52,20 @@ export default function SignUp() {
       });
 
       const signinData = await signinRes.json();
+      if (!signinRes.ok) throw new Error("Signin failed");
 
-      if (signinRes.ok) {
-        // Store user data
-        localStorage.setItem("user", JSON.stringify(signinData.user));
-        localStorage.setItem("username", signinData.user.username);
-        window.dispatchEvent(new CustomEvent("userChanged", { detail: signinData.user }));
-        
-        // Go directly to studio
-        navigate("/studio");
-      } else {
-        setError("Signup successful! Please sign in manually.");
-        navigate("/signin");
-      }
+      localStorage.setItem("user", JSON.stringify(signinData.user));
+      localStorage.setItem("username", signinData.user.username);
+      localStorage.setItem("email", signinData.user.email);
+      localStorage.setItem("joined", new Date().toISOString().split("T")[0]);
+
+      window.dispatchEvent(
+        new CustomEvent("userChanged", { detail: signinData.user })
+      );
+
+      navigate("/studio");
     } catch (err) {
-      console.error("Signup Error:", err);
-      setError("Server error: " + (err.message || "try again later"));
+      setError("Server error. Try again later.");
     }
   };
 
@@ -83,10 +76,10 @@ export default function SignUp() {
         className="bg-white/10 p-8 rounded-2xl w-full max-w-md text-white"
       >
         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
+
         {error && <div className="text-red-400 mb-4">{error}</div>}
 
         <input
-          type="text"
           placeholder="Full Name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -94,7 +87,6 @@ export default function SignUp() {
         />
 
         <input
-          type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
@@ -119,7 +111,7 @@ export default function SignUp() {
           />
           <span
             onClick={() => setShowPass(!showPass)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400"
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
           >
             {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
           </span>
@@ -135,7 +127,7 @@ export default function SignUp() {
           />
           <span
             onClick={() => setShowConfirm(!showConfirm)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400"
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
           >
             {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
           </span>
@@ -143,7 +135,7 @@ export default function SignUp() {
 
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-2 rounded font-bold hover:opacity-90"
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-2 rounded font-bold"
         >
           Sign Up
         </button>

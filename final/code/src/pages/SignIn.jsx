@@ -21,52 +21,43 @@ export default function SignIn() {
     }
 
     try {
-      if (API) {
-        const res = await fetch(`${API}/signin`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
+      if (!API) throw new Error("API missing");
 
-        if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem("user", JSON.stringify(data.user));
-          localStorage.setItem("username", data.user.username);
-          window.dispatchEvent(
-            new CustomEvent("userChanged", { detail: data.user })
-          );
-          navigate("/studio");
-          return;
-        }
-      }
+      const res = await fetch(`${API}/signin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-      // 🔥 DEMO FALLBACK (no backend / error)
-      const demoUser = {
-        id: 1,
-        fullName: "Demo User",
-        username,
-        email: "demo@example.com",
-      };
+      if (!res.ok) throw new Error("Invalid credentials");
 
-      localStorage.setItem("user", JSON.stringify(demoUser));
-      localStorage.setItem("username", username);
+      const data = await res.json();
+
+      // ✅ SINGLE SOURCE OF TRUTH
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("username", data.user.username);
+      localStorage.setItem("email", data.user.email);
+      localStorage.setItem("joined", new Date().toISOString().split("T")[0]);
+
       window.dispatchEvent(
-        new CustomEvent("userChanged", { detail: demoUser })
+        new CustomEvent("userChanged", { detail: data.user })
       );
 
       navigate("/studio");
     } catch (err) {
-      console.warn("Backend not reachable, using demo login");
-
+      // 🔥 Demo fallback (kept, but consistent)
       const demoUser = {
-        id: 1,
-        fullName: "Demo User",
+        id: 0,
+        fullName: username,
         username,
         email: "demo@example.com",
+        joined: new Date().toISOString().split("T")[0],
       };
 
       localStorage.setItem("user", JSON.stringify(demoUser));
-      localStorage.setItem("username", username);
+      localStorage.setItem("username", demoUser.username);
+      localStorage.setItem("email", demoUser.email);
+
       window.dispatchEvent(
         new CustomEvent("userChanged", { detail: demoUser })
       );
@@ -82,6 +73,7 @@ export default function SignIn() {
         className="bg-white/10 p-8 rounded-2xl w-full max-w-md text-white"
       >
         <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
+
         {error && <div className="text-red-400 mb-4">{error}</div>}
 
         <input
@@ -110,7 +102,7 @@ export default function SignIn() {
 
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-2 rounded font-bold hover:opacity-90"
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-2 rounded font-bold"
         >
           Sign In
         </button>

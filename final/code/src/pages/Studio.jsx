@@ -164,13 +164,26 @@ export default function Studio() {
         {error && <p className="text-red-400">{error}</p>}
 
         {audioUrl && (
-          <div className="grid grid-cols-3 gap-6 mt-6">
-            <div className="col-span-2 space-y-4">
-              <audio controls src={audioUrl} className="w-full" />
-              <Waveform audioUrl={audioUrl} />
-            </div>
-          </div>
-        )}
+  <div className="grid grid-cols-4 gap-4 mt-6 bg-gray-800 p-4 rounded text-center">
+    <div>
+      <p className="text-gray-400 text-sm">Mood</p>
+      <p className="font-bold">{mood}</p>
+    </div>
+    <div>
+      <p className="text-gray-400 text-sm">Duration</p>
+      <p className="font-bold">{duration}s</p>
+    </div>
+    <div>
+      <p className="text-gray-400 text-sm">Tempo</p>
+      <p className="font-bold">{tempo} BPM</p>
+    </div>
+    <div>
+      <p className="text-gray-400 text-sm">Instrument</p>
+      <p className="font-bold">{instruments}</p>
+    </div>
+  </div>
+)}
+
 
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">History</h2>
