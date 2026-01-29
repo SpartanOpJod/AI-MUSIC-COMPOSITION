@@ -4,15 +4,11 @@ import os
 import sqlite3
 from io import BytesIO
 
+from music_generator import query_musicgen
 
 app = Flask(__name__)
 
-CORS(
-    app,
-    resources={r"/*": {"origins": "*"}},
-    allow_headers=["Content-Type", "Authorization"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-)
+CORS(app)
 
 DATA_DIR = "/tmp"
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -24,8 +20,7 @@ MUSIC_DB_PATH = os.path.join(DATA_DIR, "music_history.db")
 def init_users_db():
     conn = sqlite3.connect(USERS_DB_PATH)
     c = conn.cursor()
-    c.execute(
-        """
+    c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fullName TEXT NOT NULL,
@@ -33,8 +28,7 @@ def init_users_db():
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL
         )
-        """
-    )
+    """)
     conn.commit()
     conn.close()
 
@@ -42,8 +36,7 @@ def init_users_db():
 def init_music_db():
     conn = sqlite3.connect(MUSIC_DB_PATH)
     c = conn.cursor()
-    c.execute(
-        """
+    c.execute("""
         CREATE TABLE IF NOT EXISTS music_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
@@ -54,16 +47,13 @@ def init_music_db():
             duration INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        """
-    )
+    """)
     conn.commit()
     conn.close()
 
 
 init_users_db()
 init_music_db()
-
-mood_analyzer = MoodAnalyzer()
 
 
 @app.route("/studio-generate", methods=["POST"])
@@ -78,12 +68,11 @@ def studio_generate():
     instruments = data.get("instruments", "piano")
     username = data.get("username", "guest")
 
+    mood = data.get("mood", "calm")
+    energy = int(data.get("energy", 5))
+
     if duration < 5 or duration > 30:
         return jsonify({"error": "Duration must be between 5–30 seconds"}), 400
-
-    analysis = mood_analyzer.analyze(prompt)
-    mood = analysis["mood"]
-    energy = analysis["energy"]
 
     audio_bytes = query_musicgen(
         prompt=prompt,
@@ -96,14 +85,11 @@ def studio_generate():
     try:
         conn = sqlite3.connect(MUSIC_DB_PATH)
         c = conn.cursor()
-        c.execute(
-            """
+        c.execute("""
             INSERT INTO music_history
             (username, prompt, mood, instruments, tempo, duration)
             VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (username, prompt, mood, instruments, tempo, duration),
-        )
+        """, (username, prompt, mood, instruments, tempo, duration))
         conn.commit()
         conn.close()
     except Exception:
@@ -122,9 +108,9 @@ def studio_generate():
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "service": "AI Music Backend"}), 200
+    return jsonify({"status": "ok"}), 200
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)
