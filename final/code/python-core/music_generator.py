@@ -1,8 +1,14 @@
-# music_generator.py
 import io
 import wave
 import numpy as np
+import requests
+import base64
+import os
 
+COLAB_URL = os.environ.get(
+    "COLAB_URL",
+    "https://huggingface.co/spaces/SpartanOp/AI_Music_Generator"
+)
 
 def generate_dummy_wav_bytes(
     prompt: str,
@@ -24,15 +30,9 @@ def generate_dummy_wav_bytes(
     base_freq += (energy - 5) * 15
 
     t = np.linspace(0, duration, int(sr * duration), endpoint=False)
-
     audio = 0.35 * np.sin(2 * np.pi * base_freq * t)
-
-    if energy > 6:
-        audio += 0.2 * np.sin(2 * np.pi * base_freq * 2 * t)
-    else:
-        audio += 0.1 * np.sin(2 * np.pi * base_freq * 0.5 * t)
-
     audio = audio / (np.max(np.abs(audio)) + 1e-9)
+
     audio_int16 = (audio * 32767).astype("int16")
 
     buf = io.BytesIO()
@@ -45,18 +45,37 @@ def generate_dummy_wav_bytes(
     return buf.getvalue()
 
 
-def query_musicgen(
-    prompt,
-    duration=10,
-    mood="calm",
-    energy=5,
-    use_colab=True,
-    colab_url=None,
-):
-    # HF Space is UI-only; generate locally using AI-conditioned parameters
-    return generate_dummy_wav_bytes(
-        prompt,
-        duration,
-        mood=mood,
-        energy=energy,
+def query_musicgen_colab(prompt, duration=10, timeout=120):
+    url = COLAB_URL.rstrip("/")
+
+    response = requests.post(
+        f"{url}/gradio_api/call/generate_music",
+        json={"data": [prompt, duration]},
+        timeout=timeout,
     )
+    response.raise_for_status()
+
+    event_id = response.json()["event_id"]
+
+    stream = requests.get(
+        f"{url}/gradio_api/call/generate_music/{event_id}",
+        stream=True,
+        timeout=timeout,
+    )
+
+    for line in stream.iter_lines():
+        if line:
+            decoded = line.decode("utf-8")
+            if '"data"' in decoded:
+                b64 = decoded.split('"')[-2]
+                if "," in b64:
+                    b64 = b64.split(",", 1)[1]
+                return base64.b64decode(b64)
+
+    raise Exception("No audio returned from HF Space")
+
+
+def query_musicgen(prompt, duration, mood, energy, use_colab=True):
+    if use_colab:
+        return query_musicgen_colab(prompt, duration)
+    return generate_dummy_wav_bytes(prompt, duration, mood=mood, energy=energy)

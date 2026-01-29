@@ -79,7 +79,7 @@ def studio_generate():
         duration=duration,
         mood=mood,
         energy=energy,
-        use_colab=False,
+        use_colab=True,
     )
 
     try:
