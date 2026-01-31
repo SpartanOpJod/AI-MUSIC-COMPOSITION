@@ -5,6 +5,8 @@ import { Eye, EyeOff } from "lucide-react";
 const API = import.meta.env.VITE_API_URL;
 
 export default function SignUp() {
+  const navigate = useNavigate();
+
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -13,21 +15,29 @@ export default function SignUp() {
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!fullName || !username || !email || !password || !confirm) {
+    const f = fullName.trim();
+    const u = username.trim();
+    const em = email.trim();
+    const p = password.trim();
+    const c = confirm.trim();
+
+    if (!f || !u || !em || !p || !c) {
       setError("All fields are mandatory.");
       return;
     }
 
-    if (password !== confirm) {
+    if (p !== c) {
       setError("Passwords do not match.");
       return;
     }
+
+    setLoading(true);
 
     try {
       if (!API) throw new Error("API missing");
@@ -35,37 +45,42 @@ export default function SignUp() {
       const signupRes = await fetch(`${API}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, username, email, password }),
+        body: JSON.stringify({
+          fullName: f,
+          username: u,
+          email: em,
+          password: p,
+        }),
       });
 
       const signupData = await signupRes.json();
       if (!signupRes.ok) {
         setError(signupData.error || "Signup failed");
+        setLoading(false);
         return;
       }
 
-      // Auto sign-in
       const signinRes = await fetch(`${API}/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: u, password: p }),
       });
 
-      const signinData = await signinRes.json();
       if (!signinRes.ok) throw new Error("Signin failed");
 
+      const signinData = await signinRes.json();
+
       localStorage.setItem("user", JSON.stringify(signinData.user));
-      localStorage.setItem("username", signinData.user.username);
-      localStorage.setItem("email", signinData.user.email);
-      localStorage.setItem("joined", new Date().toISOString().split("T")[0]);
 
       window.dispatchEvent(
         new CustomEvent("userChanged", { detail: signinData.user })
       );
 
       navigate("/studio");
-    } catch (err) {
+    } catch {
       setError("Server error. Try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,7 +125,7 @@ export default function SignUp() {
             className="w-full p-3 rounded bg-white/5 pr-10"
           />
           <span
-            onClick={() => setShowPass(!showPass)}
+            onClick={() => setShowPass((v) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
           >
             {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -126,7 +141,7 @@ export default function SignUp() {
             className="w-full p-3 rounded bg-white/5 pr-10"
           />
           <span
-            onClick={() => setShowConfirm(!showConfirm)}
+            onClick={() => setShowConfirm((v) => !v)}
             className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
           >
             {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -135,9 +150,10 @@ export default function SignUp() {
 
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-2 rounded font-bold"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-2 rounded font-bold disabled:opacity-60"
         >
-          Sign Up
+          {loading ? "Creating account..." : "Sign Up"}
         </button>
       </form>
     </div>

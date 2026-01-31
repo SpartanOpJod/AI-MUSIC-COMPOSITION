@@ -1,62 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { User, Music, Calendar, Heart, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    favoriteMood: "Happy",
-  });
+  const storedUser = JSON.parse(localStorage.getItem("user"));
 
-  // ✅ FIX: load user correctly from localStorage
-  useEffect(() => {
-    const storedUser =
-      JSON.parse(localStorage.getItem("user")) ||
-      {
-        fullName: localStorage.getItem("username"),
-        email: localStorage.getItem("email"),
-      };
-
-    if (storedUser?.fullName) {
-      const normalizedUser = {
-        fullName: storedUser.fullName,
-        email: storedUser.email || "Not provided",
-        joined: storedUser.joined || new Date().toISOString().split("T")[0],
-        totalTracks:
-          JSON.parse(localStorage.getItem("musicHistory"))?.length || 0,
-        favoriteMood: storedUser.favoriteMood || "Happy",
-      };
-
-      setUser(normalizedUser);
-      setFormData({
-        fullName: normalizedUser.fullName,
-        email: normalizedUser.email,
-        favoriteMood: normalizedUser.favoriteMood,
-      });
-    }
-  }, []);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = () => {
-    const updatedUser = { ...user, ...formData };
-    setUser(updatedUser);
-
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    localStorage.setItem("username", formData.fullName);
-    localStorage.setItem("email", formData.email);
-
-    setIsEditing(false);
-  };
-
-  if (!user) {
+  // 🔒 HARD AUTH GUARD
+  if (!storedUser) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white bg-secondary">
         <p>Please log in to view your profile.</p>
@@ -64,13 +16,48 @@ export default function Profile() {
     );
   }
 
+  const musicHistory =
+    JSON.parse(localStorage.getItem("musicHistory")) || [];
+
+  const [user, setUser] = useState({
+    fullName: storedUser.fullName,
+    email: storedUser.email || "Not provided",
+    favoriteMood: storedUser.favoriteMood || "Happy",
+    joined: storedUser.joined || new Date().toISOString().split("T")[0],
+    totalTracks: musicHistory.length,
+  });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: user.fullName,
+    email: user.email,
+    favoriteMood: user.favoriteMood,
+  });
+
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleSave = () => {
+    const updatedUser = { ...user, ...formData };
+    setUser(updatedUser);
+
+    // ✅ SINGLE SOURCE OF TRUTH
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+
+    setIsEditing(false);
+  };
+
   return (
     <div className="bg-secondary min-h-screen font-sans text-white px-6 py-12">
       <div className="max-w-5xl mx-auto space-y-12">
         {/* Greeting */}
         <div className="text-2xl mb-6">
           <span className="text-gray-400">Hello, </span>
-          <span className="text-white font-bold">{user.fullName}!</span>
+          <span className="font-bold">{user.fullName}!</span>
         </div>
 
         {/* Header */}
@@ -93,7 +80,9 @@ export default function Profile() {
             <div>
               <h2 className="text-2xl font-bold">{user.fullName}</h2>
               <p className="text-gray-300">{user.email}</p>
-              <p className="text-gray-400 text-sm">Joined: {user.joined}</p>
+              <p className="text-gray-400 text-sm">
+                Joined: {user.joined}
+              </p>
             </div>
           </div>
 
@@ -109,7 +98,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ✅ FIX: Quick Actions now navigate */}
+        {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div
             onClick={() => navigate("/studio")}
@@ -139,13 +128,13 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Edit Profile Modal (unchanged) */}
+      {/* Edit Modal */}
       {isEditing && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md relative">
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
               onClick={() => setIsEditing(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
             >
               <X size={24} />
             </button>

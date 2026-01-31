@@ -1,30 +1,50 @@
 import React, { useState, useEffect, useRef } from "react";
-import Waveform from "../components/Waveform";
 
 const API = import.meta.env.VITE_API_URL;
 
 export default function Studio() {
   const controllerRef = useRef(null);
+  const audioUrlRef = useRef(null);
+
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+
+  // 🔒 HARD AUTH GUARD
+  if (!storedUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white bg-secondary">
+        <p>Please sign in to use the Music Studio.</p>
+      </div>
+    );
+  }
 
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(20);
   const [mood, setMood] = useState("Happy");
   const [tempo, setTempo] = useState(120);
   const [instruments, setInstruments] = useState("Piano");
+
   const [loading, setLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [error, setError] = useState("");
 
-  const [history, setHistory] = useState(() =>
-    JSON.parse(localStorage.getItem("musicHistory")) || []
+  const [history, setHistory] = useState(
+    () => JSON.parse(localStorage.getItem("musicHistory")) || []
   );
 
+  // Restore mood from Home → Studio jump
   useEffect(() => {
     const savedMood = localStorage.getItem("muse_mood");
     if (savedMood) {
       setMood(savedMood);
       localStorage.removeItem("muse_mood");
     }
+
+    return () => {
+      controllerRef.current?.abort();
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
+    };
   }, []);
 
   const saveToHistory = (item) => {
@@ -34,6 +54,11 @@ export default function Studio() {
   };
 
   const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      setError("⚠️ Please enter a prompt");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setAudioUrl(null);
@@ -50,15 +75,22 @@ export default function Studio() {
           mood,
           tempo,
           instruments,
-          username: localStorage.getItem("username") || "guest",
+          username: storedUser.username, // ✅ correct source
         }),
         signal: controllerRef.current.signal,
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("Generation failed");
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
+
+      // cleanup old URL
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
+
+      audioUrlRef.current = url;
       setAudioUrl(url);
 
       saveToHistory({
@@ -102,6 +134,7 @@ export default function Studio() {
             rows="3"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Describe the music..."
           />
 
           <div className="space-y-4">
@@ -164,26 +197,25 @@ export default function Studio() {
         {error && <p className="text-red-400">{error}</p>}
 
         {audioUrl && (
-  <div className="grid grid-cols-4 gap-4 mt-6 bg-gray-800 p-4 rounded text-center">
-    <div>
-      <p className="text-gray-400 text-sm">Mood</p>
-      <p className="font-bold">{mood}</p>
-    </div>
-    <div>
-      <p className="text-gray-400 text-sm">Duration</p>
-      <p className="font-bold">{duration}s</p>
-    </div>
-    <div>
-      <p className="text-gray-400 text-sm">Tempo</p>
-      <p className="font-bold">{tempo} BPM</p>
-    </div>
-    <div>
-      <p className="text-gray-400 text-sm">Instrument</p>
-      <p className="font-bold">{instruments}</p>
-    </div>
-  </div>
-)}
-
+          <div className="grid grid-cols-4 gap-4 mt-6 bg-gray-800 p-4 rounded text-center">
+            <div>
+              <p className="text-gray-400 text-sm">Mood</p>
+              <p className="font-bold">{mood}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Duration</p>
+              <p className="font-bold">{duration}s</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Tempo</p>
+              <p className="font-bold">{tempo} BPM</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Instrument</p>
+              <p className="font-bold">{instruments}</p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">History</h2>
