@@ -1,255 +1,102 @@
-🎵 AI Music Composition
+# AI Music Composition
 
-Generate music from emotions using Generative AI.
-Describe how you feel — get a melody that matches your vibe.
+A full-stack music generation project that converts natural-language prompts and mood inputs into AI-generated audio.
 
-AI Music Composition is a full-stack GenAI powered music studio that turns text-based moods and prompts into real, downloadable music.
-It combines a modern React frontend with a Streamlit + MusicGen backend to create an interactive AI-driven music experience.
+## Overview
 
-✨ What it does
+AI Music Composition combines:
 
-You type how you feel (happy, sad, energetic, romantic, etc.) →
-The AI understands the mood →
-It generates music →
-You can listen, visualize, and download it 🎶
+- A React + Vite frontend (`final/code`) for authentication, studio controls, history, and playback.
+- A Python backend (`final/code/python-core`) with Flask APIs and MusicGen/Gradio integration.
+- Optional Streamlit interface for direct local experimentation (`python-core/app.py`).
 
-This is basically Spotify meets AI meets emotions.
+## Key Features
 
-🧠 Core Features
+- Mood-aware prompt-driven music generation
+- Adjustable generation controls (duration, tempo, instruments)
+- User sign-up/sign-in flow
+- Audio playback and download in the studio
+- Local history tracking in the frontend
+- Health endpoint for API monitoring
 
-🎭 Mood-based music generation (Happy, Sad, Calm, Energetic, Romantic, Mysterious)
+## Repository Structure
 
-✍️ Text prompt control (describe the vibe you want)
+```text
+AI-MUSIC-COMPOSITION/
+  README.md
+  LICENSE
+  final/
+    code/
+      src/                  # React frontend
+      python-core/          # Flask API + Music generation logic
+      package.json
+```
 
-🎼 Instrument selection (synth, piano, drums, etc.)
+## Tech Stack
 
-⏱ Tempo & duration control
+- Frontend: React, Vite, Tailwind CSS
+- Backend: Python, Flask, Flask-CORS, SQLite
+- AI/Audio: Gradio Client, Hugging Face Space integration, NumPy, PyDub
 
-🎧 Instant audio playback
+## Local Setup
 
-⬇️ Download generated music as MP3
+### 1. Frontend
 
-📊 Waveform visualization
-
-🔀 Seeded randomness → every generation is unique
-
-🖥️ Frontend – MuseAI (React + Vite)
-
-The frontend is a full music studio UI called MuseAI Frontend v3.
-
-Pages
-
-Home
-
-Clean hero section
-
-Featured music grid (20 items)
-
-Studio (/studio)
-
-Instrument-themed background
-
-20 prompt ideas
-
-Manual controls
-
-Music features
-
-History button
-
-Instrument gallery
-
-About
-
-AI music workflow
-
-20 listed features
-
-History
-
-Music library layout
-
-Shows placeholders when empty (20 items)
-
-Profile
-
-User info
-
-Account features list
-
-Dev Setup
-cd MuseAI-Frontend
+```bash
+cd final/code
 npm install
 npm run dev
+```
 
+Default frontend URL: `http://localhost:5173`
 
-Vite automatically proxies:
+Create `.env` in `final/code`:
 
-/api → http://localhost:8000
+```bash
+VITE_API_URL=http://localhost:8000
+```
 
-🧪 Backend – Streamlit AI Engine
+### 2. Backend (Flask API)
 
-The backend is a Streamlit-based AI music engine that uses MusicGen (via Colab or API) and custom audio processing.
+```bash
+cd final/code/python-core
+pip install -r requirements.txt
+python studio_api.py
+```
 
-It:
+Default backend URL: `http://localhost:8000`
 
-Takes mood, prompt, tempo, instruments
+Health check:
 
-Calls MusicGen
+```bash
+curl http://localhost:8000/health
+```
 
-Processes audio
+### 3. Optional: Streamlit Interface
 
-Converts to MP3
-
-Returns playable + downloadable music
-
-Generates waveform visualizations
-
-🎛 How the AI works
-
-User provides:
-
-Mood
-
-Prompt
-
-Tempo
-
-Instruments
-
-Duration
-
-The system:
-
-Creates a unique random seed
-
-Sends the prompt to MusicGen (via Colab or API)
-
-Receives raw audio
-
-The AudioProcessor:
-
-Applies mood & tempo adjustments
-
-Converts output to MP3
-
-Calculates file size
-
-The app:
-
-Displays audio player
-
-Generates waveform
-
-Enables download
-
-🧩 Tech Stack
-Frontend
-
-React
-
-Vite
-
-Tailwind CSS
-
-Backend
-
-Python
-
-Streamlit
-
-NumPy
-
-PyDub
-
-Matplotlib
-
-Seaborn
-
-AI
-
-Meta MusicGen (via Colab / API)
-
-Generative AI for music synthesis
-
-🧑‍💻 How to run locally
-1. Backend
+```bash
+cd final/code/python-core
 pip install -r requirements.txt
 streamlit run app.py
+```
 
+Default Streamlit URL: `http://localhost:8501`
 
-Runs on:
+## API Endpoints (Flask)
 
-http://localhost:8501
+- `POST /signup`
+- `POST /signin`
+- `POST /studio-generate`
+- `GET /health`
 
-2. Frontend
-cd MuseAI-Frontend
-npm install
-npm run dev
+## Notes
 
+- Music generation is powered through the configured Gradio endpoint in `python-core/music_generator.py`.
+- SQLite databases are initialized automatically by the backend.
+- The frontend expects `VITE_API_URL` to be set before starting.
 
-Runs on:
+## Author
 
-http://localhost:5173
-
-📡 Colab Integration
-
-The app can connect to a MusicGen Gradio Colab server.
-
-Just paste the URL into:
-
-Colab Gradio URL
-
-
-Example:
-
-https://xxxx.gradio.live
-
-
-Enable:
-
-Use Colab MusicGen ✔
-
-🖼️ Waveform Visualization
-
-Every generated song gets a live waveform preview so you can actually see your music 🔥
-This is done using:
-
-PyDub
-
-NumPy
-
-Matplotlib
-
-Seaborn
-
-🚀 Future Ideas
-
-Voice-based mood detection
-
-User accounts
-
-Playlist export
-
-Genre presets
-
-AI mastering
-
-Beat + melody separation
-
-Mobile app
-
-🧠 MusicGen / Colab support
-
-📜 History & Library (Frontend)
-
-🎹 Studio Mode with pro-level controls
-
-
-📬 Contact
-
-👤 Developed by: Aryan Srivastava 
-
-🔗 LinkedIn Profile:https://www.linkedin.com/in/aryan-srivastava-29a9a031a/
-
-🌐 GitHub: https://github.com/SpartanOpJod
+- Aryan Srivastava
+- LinkedIn: https://www.linkedin.com/in/aryan-srivastava-29a9a031a/
+- GitHub: https://github.com/SpartanOpJod
